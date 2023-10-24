@@ -39,7 +39,7 @@ def go_to_jobposition_page(driver: webdriver) -> None:
     """Función que solicita la url al usuario y luego va a la página de los candidatos"""
 
     print("%%"*50)
-    url = input("Introduzca la url de la página del anuncio")
+    url = input("Introduzca la url de la página del anuncio\n")
     print("%%"*50)
 
     validating_url = True

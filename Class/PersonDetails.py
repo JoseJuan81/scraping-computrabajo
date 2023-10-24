@@ -7,6 +7,7 @@ from helper.constant import CandidateFields
 
 
 class PersonDetails:
+    
     def __init__(self, person: dict, driver: webdriver) -> None:
         self.driver: webdriver = driver
         self.person: dict = person

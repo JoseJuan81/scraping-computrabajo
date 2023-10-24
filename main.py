@@ -1,14 +1,24 @@
 """Módulo de inicio para hacer scraping en computrabajo"""
 
 from Class.Scraper import Scraper
-from helper.ghl import GHL_APP
+from Class.GHL import GHL_APP
 
+from helper.enums import PlataformsNames
 
 if __name__ == "__main__":
+
     scraper = Scraper()
-    scraper.init()
-    #scraper.use_external_api(send=GHL_APP)
-    scraper.use_external_api(send=False)
-    scraper.list_of_candidates()
-    scraper.details_of_candidate()
-    scraper.end()
+
+    plataforms = scraper.set_plataforms(plataforms=[
+        PlataformsNames.Computrabajo.value,
+        PlataformsNames.Linkedin.value,
+        PlataformsNames.Bumeran.value
+    ])
+
+    if plataforms:
+        scraper.init()
+        scraper.use_external_api(send=GHL_APP)
+        scraper.save()
+        # scraper.use_external_api(send=False)
+        scraper.send_data_to_external_api()
+        scraper.end()

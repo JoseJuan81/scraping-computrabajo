@@ -1,6 +1,5 @@
 from enum import Enum
 
-
 class CandidateFields(Enum):
     AGE = "age"
     APPLICATION_TIME = "application_time"
@@ -18,3 +17,8 @@ class CandidateFields(Enum):
     PROFILE_PAGE = "profile_page"
     WORK_EXPERIENCE = "work_experience"
     TAGS = "tags"
+
+class PlataformsNames(Enum):
+    Computrabajo = "computrabajo"
+    Linkedin = "linkedin"
+    Bumeran = "bumeran"

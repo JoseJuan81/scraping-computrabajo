@@ -1,16 +1,29 @@
 import os
-import json
 import requests
 
+from pydantic import BaseModel
+from typing import Union
 from dotenv import load_dotenv
 
-from helper.ghl import build_ghl_data
 from helper.constant import CandidateFields
+from helper.utils import destructure_name
 
 load_dotenv()
-
 GHL_URL = os.getenv("GHL_URL")
 GHL_TOKEN = os.getenv("GHL_TOKEN")
+
+GHL_APP = "ghl"
+
+class GHLContactModel(BaseModel):
+    address1: Union[str, None] = ""
+    email: str
+    firstName: str
+    lastName: str
+    phone: str
+    source: str = "computrabajo_scrapper"
+    tags: Union[list[str], None] = []
+    city: Union[str, None] = ""
+    customField: Union[dict, None] = {}
 
 class GoHighLevel:
     def __init__(self, candidate: dict = {}) -> None:
@@ -41,7 +54,7 @@ class GoHighLevel:
     def send(self) -> None:
         """Función para enviar contacto a Go High Level"""
 
-        _candidate = build_ghl_data(self.candidate)
+        _candidate = self.build_ghl_data(self.candidate)
         headers = self.ghl_headers()
 
         try:
@@ -75,4 +88,35 @@ class GoHighLevel:
     
     def build_ghl_data(self, candidate: dict = {}) -> dict:
         """Función para transformar la data a la estructura de GHL"""
-        pass
+        
+        candidate_name = candidate[CandidateFields.NAME.value]
+        first_name, last_name = destructure_name(candidate_name)
+        custom_field = self.build_custom_fields(candidate)
+
+        _data = dict([
+            ("email", candidate[CandidateFields.EMAIL.value]),
+            ("firstName", first_name),
+            ("lastName", last_name),
+            ("phone", candidate[CandidateFields.PHONE.value]),
+            ("address1", candidate[CandidateFields.CITY.value]),
+            ("customField", custom_field),
+            ("tags", candidate[CandidateFields.TAGS.value])
+        ])
+
+        data = GHLContactModel(**_data)
+        return data.dict()
+
+    def build_custom_fields(candidate: dict) -> dict:
+        """Función para construir campos personalizado para GHL"""
+
+        data = dict([
+            ("dni", candidate[CandidateFields.DNI.value]),
+            ("expectativa_salarial",
+            candidate[CandidateFields.EXPECTATION.value]),
+            ("resumen_personal",
+            candidate[CandidateFields.PERSONAL_SUMMARY.value]),
+            ("experiencia_laboral",
+            candidate[CandidateFields.WORK_EXPERIENCE.value]),
+        ])
+
+        return data

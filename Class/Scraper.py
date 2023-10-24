@@ -1,32 +1,13 @@
-import os
-import requests
-import json
-import pandas as pd
-import requests
+import threading
 
 from selenium import webdriver
-from selenium.webdriver.common.by import By
-from dotenv import load_dotenv
+from selenium.webdriver.Remote import _web_element_cls
 
-from helper.file import save_candidates
-from helper.selenium import get_elements, get_candidates_webelements
-from helper.selenium import go_to_jobposition_page, get_next_pagination_button
-from helper.constant import CandidateFields
-from helper.ghl import GHL_APP
+from helper.enums import PlataformsNames
 
-from Class.PersonData import PersonData
-from Class.PersonDetails import PersonDetails
-from Class.GHL import GoHighLevel
-
-from pathlib import Path
-
-
-load_dotenv()
-
-USER_EMAIL = os.getenv("USER_EMAIL")
-USER_PASS = os.getenv("USER_PASS")
-COMPUTRABAJO_URL_LOGIN = os.getenv("COMPUTRABAJO_URL_LOGIN")
-
+from Class.Scraping.Computrabajo.Computrabajo import Computrabajo
+from Class.Scraping.LinkedIn.LinkedIn import LinkedIn
+from Class.Scraping.Bumeran.Bumeran import Bumeran
 
 class Scraper:
     """Clase que realiza el scraping de los candidatos de un anuncio de empleo en computrabajo"""
@@ -34,153 +15,106 @@ class Scraper:
     def __init__(self) -> None:
         self.driver: webdriver = None
         self.candidates: list = []
-        self.next_button: webdriver.Remote._web_element_cls = None
+        self.next_button: _web_element_cls = None
         self.ghl_contacts: list[dict] = []
         # external api debe ser una list[str] para incluir varias aplicaciones.
         self.external_api: str = ""
         self.job_position: str = ""
+        self.plataforms: list[str] = []
+        self.hilos: list = []
+
+    def set_plataforms(self, plataforms: list[str] = []) -> bool:
+        """Funcion que establece las plataformas de trabajo a escrapear
+        (computrabajo, linkedin, bumeran, etc)"""
+
+        if len(plataforms) > 0:
+            self.plataforms = plataforms
+            return True
+        else:
+            print("RR"*40)
+            print("No selecciono plataforma para scrapear !!!")
+            print("RR"*40)
+            self.end()
+
+            return False
 
     def init(self) -> None:
-        """Inicio del webdriver para hacer scraper"""
+        """Inicio del webdriver por plataforma para hacer scraping"""
 
-        options = webdriver.ChromeOptions()
-        self.driver = webdriver.Chrome(options=options)
+        if PlataformsNames.Computrabajo.value in self.plataforms:
+            hilo_computrabajo = threading.Thread(target=self.computrabajo_hilo)
+            self.hilos.append(hilo_computrabajo)
 
-        self.login()
+        if PlataformsNames.Linkedin.value in self.plataforms:
+            hilo_linkedin = threading.Thread(target=self.linkedin_hilo)
+            self.hilos.append(hilo_linkedin)
 
-    def login(self) -> None:
-        """Inicio de sesión"""
+        if PlataformsNames.Bumeran.value in self.plataforms:
+            hilo_bumeran = threading.Thread(target=self.bumeran_hilo)
+            self.hilos.append(hilo_bumeran)
 
-        self.driver.get(COMPUTRABAJO_URL_LOGIN)
+        self.start_all_hilos()
 
-        input_email, *_ = get_elements("#Email", self.driver)
-        input_pass, *_ = get_elements("#Password", self.driver)
+    def save(self) -> None:
+        """Funcion para guardar datos recolectados de todas las plataformas"""
 
-        input_email.send_keys(USER_EMAIL)
-        input_pass.send_keys(USER_PASS)
+        self.end_all_hilos()
 
-        btn, *_ = get_elements("#bbR", self.driver)
-        btn.click()
+        if PlataformsNames.Computrabajo.value in self.plataforms:
+            self.computrabajo.save()
 
-    def next_page(self) -> bool:
-        """Función que obtiene el boton de paginación y lo presiona. Retorna True o False"""
+        if PlataformsNames.Linkedin.value in self.plataforms:
+            self.linkedin.save()
 
-        pagination_btn = get_next_pagination_button(self.driver)
-
-        if pagination_btn:
-            pagination_btn.click()
-            return True
-
-        return False
-
-    def list_of_candidates(self) -> None:
-        """Función para obtener candidatos en un determinado puesto de trabajo"""
-
-        print("...obteniendo los datos")
-
-        loop_validator = True
-        self.job_position = input(
-            "Introduce el nombre del puesto de trabajo\n")
-
-        exist_page_to_scrap = go_to_jobposition_page(self.driver)
-
-        counter = 1
-        while loop_validator:
-            if exist_page_to_scrap:
-                print(f"página {counter} ")
-
-                candidates = get_candidates_webelements(self.driver)
-                self.extract_initial_data_from_candidates(candidates)
-                loop_validator = self.next_page()
-            else:
-                print("=="*50)
-                print("Usuario no quiso hacer el scraping...le dio miedito :(")
-                print("=="*50)
-
-                loop_validator = False
-
-            counter += 1
-
-        if exist_page_to_scrap:
-            print("=="*50)
-            print(f"Se encontraron {len(self.candidates)} candidatos")
-
-            self.candidates = save_candidates(
-                self.candidates, self.job_position)
-            print("información preliminar de los candidatos guardada!!")
-            print("__"*50)
-
-    def extract_initial_data_from_candidates(self, candidates: list) -> None:
-        """Función para extraer la información de cada candidato"""
-
-        local_candidates = []
-        for candidate in candidates:
-            person = PersonData(candidate)
-
-            data = dict([
-                (CandidateFields.NAME.value, person.name()),
-                (CandidateFields.IMAGE.value, person.image()),
-                (CandidateFields.PROFILE_PAGE.value, person.profile_page()),
-                (CandidateFields.APPLICATION_TIME.value, person.application_time()),
-                (CandidateFields.AGE.value, person.age()),
-                (CandidateFields.GRADE.value, person.grade()),
-                (CandidateFields.MATCH.value, person.match()),
-            ])
-
-            local_candidates.append(data)
-
-        self.candidates += local_candidates
-
-    def details_of_candidate(self) -> None:
-        """Función para extraer información detallada del candidato"""
-
-        counter = 1
-        local_candidates = []
-        for candidate in self.candidates:
-
-            print(
-                f'{counter} - Candidato: {candidate[CandidateFields.NAME.value]}')
-
-            person = PersonDetails(candidate, self.driver)
-            person.profile_page()
-
-            data = dict([
-                (CandidateFields.EMAIL.value, person.email()),
-                (CandidateFields.DNI.value, person.dni()),
-                (CandidateFields.PHONE.value, person.phone()),
-                (CandidateFields.CITY.value, person.city()),
-                (CandidateFields.EXPECTATION.value, person.expectation()),
-                (CandidateFields.PERSONAL_SUMMARY.value, person.personal_summary()),
-                (CandidateFields.WORK_EXPERIENCE.value, person.work_experience()),
-            ])
-
-            candidate_full_data = {**candidate, **data}
-            local_candidates.append(candidate_full_data)
-
-            self.send_data_to_external_api(candidate_full_data)
-
-            counter += 1
-
-        self.candidates = local_candidates
-        save_candidates(self.candidates, self.job_position)
-
-    def send_data_to_external_api(self, candidate_data) -> None:
-        """Función que determina si la información del candidato debe envivarse a una Api externa"""
-
-        if self.external_api == GHL_APP:
-            ghl = GoHighLevel(candidate=candidate_data)
-            ghl.set_recruitment_platform("computrabajo")
-            ghl.set_tags([self.job_position])
-            ghl.send()
+        if PlataformsNames.Bumeran.value in self.plataforms:
+            self.bumeran.save()
 
     def use_external_api(self, send: str = "") -> None:
         """Función que registra las aplicaciones externas para envío de datos"""
 
         self.external_api = send
 
+    def send_data_to_external_api(self) -> None:
+        """Enviar data recolectada a API externa"""
+
+        if PlataformsNames.Computrabajo.value in self.plataforms:
+            self.computrabajo.send_data_to_external_api(self.external_api)
+
+        if PlataformsNames.Linkedin.value in self.plataforms:
+            self.linkedin.send_data_to_external_api()
+
+        if PlataformsNames.Bumeran.value in self.plataforms:
+            self.bumeran.send_data_to_external_api()
+
     def end(self) -> None:
-        print("%%"*50)
-        print("%%"*50)
+        """Funcion que muestra el mensaje de FIN del scraping"""
+        print("%%"*40)
+        print("%%"*40)
         print("FIN")
-        print("%%"*50)
-        print("%%"*50)
+        print("%%"*40)
+        print("%%"*40)
+
+    def computrabajo_hilo(self) -> None:
+            self.computrabajo = Computrabajo()
+            self.computrabajo.start()
+
+    def linkedin_hilo(self) -> None:
+            self.linkedin = LinkedIn()
+            self.linkedin.start()
+
+    def bumeran_hilo(self) -> None:
+            self.bumeran = Bumeran()
+            self.bumeran.start()
+
+    def start_all_hilos(self) -> None:
+        """Funcion que inicia todos los hilos creados"""
+
+        for hilo in self.hilos:
+            hilo.start()
+
+    def end_all_hilos(self) -> None:
+        """Funcion que finaliza todos los hilos"""
+
+        for hilo in self.hilos:
+            hilo.join()
+    
