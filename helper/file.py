@@ -2,7 +2,7 @@ import pandas as pd
 
 from pathlib import Path
 
-from helper.constant import CandidateFields
+from helper.enums import CandidateFields
 
 
 def save_file_path(file_name: str) -> Path:

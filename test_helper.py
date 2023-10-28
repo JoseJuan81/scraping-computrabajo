@@ -1,5 +1,5 @@
 from helper.utils import destructure_name, extract_expectation_amount
-from helper.constant import CandidateFields
+from helper.enums import CandidateFields
 
 
 def test_destructure_name():

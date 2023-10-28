@@ -24,7 +24,7 @@ class Computrabajo(ScraperBase):
     LIST_OF_CANDIDATES_SELECTOR = "article.rowuser.pos_rel.bClick.no_icons"
     NEXT_PAGE_SELECTOR = "div.paginas li.siguiente"
 
-    def __init__(self) -> None:
+    def __init__(self, external_api: str = "") -> None:
         super().__init__() #llama al constructor de ScraperBase
 
         self.user_email: str = USER_EMAIL # hereda la propiedad de ScraperBase
@@ -34,6 +34,7 @@ class Computrabajo(ScraperBase):
         self.candidates: list[WebElement] = []
         self.person = Person()
         self.plataform_name = "Computrabajo"
+        self.external_api = external_api
 
     def start(self) -> None:
         """Funcion para iniciar proceso de scrping en Computrabajo"""
@@ -48,6 +49,7 @@ class Computrabajo(ScraperBase):
 
         options = webdriver.ChromeOptions()
         self.driver = webdriver.Chrome(options=options)
+        self.person.set_driver(self.driver)
 
     def login(self) -> None:
         """Funcion para iniciar sesion en plataforma computrabajo"""
@@ -128,23 +130,31 @@ class Computrabajo(ScraperBase):
 
             candidate_full_data = { **candidate, **data }
             local_candidates.append(candidate_full_data)
+
+            self.send_data_to_external_api(candidate_full_data)
             
             counter += 1
 
-        self.candidates = save_candidates(local_candidates, self.job_position)
+        self.candidates = self.save_data_to_file(local_candidates, self.job_position)
+    
+    def save_data_to_file(self, candidates: dict = {}, job_position_name: str = "") -> dict:
+        """Funcion para guardar la data scrapeada a un archivo tipo .csv"""
 
-    def send_data_to_external_api(self, external_api: str) -> None:
+        _job_position = f"{self.plataform_name}_{job_position_name}"
+        return save_candidates(candidates, _job_position)
+
+    def send_data_to_external_api(self, candidate_data: dict = {}) -> None:
         """Función que determina si la información del candidato debe envivarse a una Api externa"""
 
-        # Ojo que debo enviar 1 por 1 los datos a GHL
         if self.external_api == GHL_APP:
-            ghl = GoHighLevel(candidates=self.candidates)
-            ghl.set_recruitment_platform(self.plataform_name)
+            ghl = GoHighLevel(candidate=candidate_data)
+            ghl.set_tags([self.plataform_name, self.job_position])
+            ghl.send()
     
     def get_candidates_webelements(self) -> list[WebElement]:
         """Función que obtiene y retorna lista de candidatos de Computrabajo"""
 
-        candidates = super().get_elements(self.LIST_OF_CANDIDATES_SELECTOR)
+        candidates = super().get_elements(selector = self.LIST_OF_CANDIDATES_SELECTOR)
 
         return candidates if candidates else []
 
@@ -184,7 +194,7 @@ class Computrabajo(ScraperBase):
     def get_next_pagination_button(self) -> WebElement | None:
         """Función que obtiene próximo botón de la paginación y lo retorna"""
 
-        elements_list = super().get_elements(self.NEXT_PAGE_SELECTOR)
+        elements_list = super().get_elements(selector = self.NEXT_PAGE_SELECTOR)
         return elements_list[0] if elements_list else None
     
     # def descargar_archivo(self) -> None:

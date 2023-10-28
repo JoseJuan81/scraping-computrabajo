@@ -1,4 +1,5 @@
 from selenium.webdriver.remote.webelement import WebElement
+from selenium import webdriver
 
 from Class.Scraping.ScraperBase import ScraperBase
 
@@ -23,7 +24,12 @@ class Person(ScraperBase):
         self.contact_data_left: list = []
         self.contact_data_right: list = []
 
-    def set_web_element(self, web_element) -> None:
+    def set_driver(self, driver: webdriver) -> None:
+        """Funcion para establecer el driver en person"""
+        
+        self.driver = driver
+
+    def set_web_element(self, web_element: WebElement) -> None:
         """Funcion para establecer el webelement del candidato"""
         
         self.web_element = web_element

@@ -16,13 +16,14 @@ class LinkedIn(ScraperBase):
     pass_selector = "input#session_password"
     btn_selector = "button[data-id='sign-in-form__submit-btn']"
 
-    def __init__(self) -> None:
+    def __init__(self, external_api: str = "") -> None:
         super().__init__() #llama al constructor de ScraperBase
 
         self.driver: webdriver = None # hereda la propiedad de ScraperBase
-        self.user_email = USER_EMAIL # hereda la propiedad de ScraperBase
-        self.user_password = USER_PASSWORD # hereda la propiedad de ScraperBase
-        self.login_url = LINKEDIN_URL_LOGIN # hereda la propiedad de ScraperBase
+        self.user_email: str = USER_EMAIL # hereda la propiedad de ScraperBase
+        self.user_password: str = USER_PASSWORD # hereda la propiedad de ScraperBase
+        self.login_url: str = LINKEDIN_URL_LOGIN # hereda la propiedad de ScraperBase
+        self.external_api: str = external_api
 
     def init_web_browser(self) -> None:
         """Funcion para iniciar el webdriver para computrabajo"""
@@ -38,6 +39,11 @@ class LinkedIn(ScraperBase):
             password_selector = self.pass_selector,
             btn_selector = self.btn_selector
         )
+    
+    def start(self) -> None:
+        """Funcion para iniciar proceso de scrping en LinkedIn"""
+        self.init_web_browser()
+        self.login()
 
     # def descargar_archivo(self) -> None:
     #

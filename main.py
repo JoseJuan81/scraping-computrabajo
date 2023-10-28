@@ -18,7 +18,5 @@ if __name__ == "__main__":
     if plataforms:
         scraper.init()
         scraper.use_external_api(send=GHL_APP)
-        scraper.save()
         # scraper.use_external_api(send=False)
-        scraper.send_data_to_external_api()
         scraper.end()

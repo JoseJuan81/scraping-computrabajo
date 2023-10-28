@@ -12,17 +12,18 @@ USER_PASSWORD = os.getenv("BUMERAN_USER_PASSWORD")
 LINKEDIN_URL_LOGIN = os.getenv("BUMERAN_URL_LOGIN")
 
 class Bumeran(ScraperBase):
-    email_selector = "input#user"
-    pass_selector = "input#password"
-    btn_selector = "input#ingresar"
+    EMAIL_SELECTOR = "input#user"
+    PASS_SELECTOR = "input#password"
+    BTN_SELECTOR = "button#ingresar"
 
-    def __init__(self) -> None:
+    def __init__(self, external_api: str = "") -> None:
         super().__init__() #llama al constructor de ScraperBase
 
         self.driver: webdriver = None # hereda la propiedad de ScraperBase
-        self.user_email = USER_EMAIL # hereda la propiedad de ScraperBase
-        self.user_password = USER_PASSWORD # hereda la propiedad de ScraperBase
-        self.login_url = LINKEDIN_URL_LOGIN # hereda la propiedad de ScraperBase
+        self.user_email: str = USER_EMAIL # hereda la propiedad de ScraperBase
+        self.user_password: str = USER_PASSWORD # hereda la propiedad de ScraperBase
+        self.login_url: str = LINKEDIN_URL_LOGIN # hereda la propiedad de ScraperBase
+        self.external_api = external_api
 
     def init_web_browser(self) -> None:
         """Funcion para iniciar el webdriver para computrabajo"""
@@ -34,10 +35,16 @@ class Bumeran(ScraperBase):
         """Funcion para iniciar sesion en plataforma computrabajo"""
 
         super().login(
-            email_selector = self.email_selector,
-            password_selector = self.pass_selector,
-            btn_selector = self.btn_selector
+            email_selector = self.EMAIL_SELECTOR,
+            password_selector = self.PASS_SELECTOR,
+            btn_selector = self.BTN_SELECTOR
         )
+
+    def start(self) -> None:
+        """Funcion para iniciar proceso de scrping en Bumeran"""
+        
+        self.init_web_browser()
+        self.login()
 
     # def descargar_archivo(self) -> None:
     #

@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from typing import Union
 from dotenv import load_dotenv
 
-from helper.constant import CandidateFields
+from helper.enums import CandidateFields
 from helper.utils import destructure_name
 
 load_dotenv()
@@ -30,7 +30,6 @@ class GoHighLevel:
         self.candidate = candidate
         self.custom_fields: dict = {}
         self.tags: list[str] = []
-        self.recruitment_platform: str = ""
 
         self.set_tags_in_candidate()
 
@@ -44,12 +43,6 @@ class GoHighLevel:
 
         self.tags = tags
         self.candidate["tags"] += self.tags
-
-    def set_recruitment_platform(self, platform: str) -> None:
-        """Funcion que establece la plataforma que se esta scrapeando"""
-
-        self.recruitment_platform = platform
-        self.candidate["tags"] += [platform]
 
     def send(self) -> None:
         """Función para enviar contacto a Go High Level"""

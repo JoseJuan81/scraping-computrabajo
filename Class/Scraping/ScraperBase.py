@@ -7,22 +7,23 @@ class ScraperBase:
         self.user_email: str = ""
         self.user_password: str = ""
         self.login_url: str = ""
+        self.driver: webdriver = None
 
     def login(self, email_selector:str = "", password_selector:str = "", btn_selector:str = "") -> None:
         """Funcion general para inicio de sesion en plataformas de empleo"""
         
         self.driver.get(self.login_url)
 
-        input_email = self.get_element(email_selector)
-        input_pass = self.get_element(password_selector)
+        input_email = self.get_element(selector = email_selector)
+        input_pass = self.get_element(selector = password_selector)
 
         input_email.send_keys(self.user_email)
         input_pass.send_keys(self.user_password)
 
-        btn = self.get_element(btn_selector)
+        btn = self.get_element(selector = btn_selector)
         btn.click()
 
-    def get_elements(self, selector: str, web_element: WebElement) -> list[webdriver]:
+    def get_elements(self, selector: str = "", web_element: WebElement | None = None) -> list[webdriver]:
         """Funcion que obtiene el elemento html basado en el selector pasado"""
 
         html = web_element if web_element else self.driver
@@ -33,7 +34,7 @@ class ScraperBase:
 
         return ele
 
-    def get_element(self, selector: str, web_element: WebElement) -> WebElement:
+    def get_element(self, selector: str = "", web_element: WebElement | None = None) -> WebElement:
         """Función para obtener 1 elemento html por css Selector"""
 
         html = web_element if web_element else self.driver
@@ -44,12 +45,8 @@ class ScraperBase:
 
         return ele
 
-    def go_to_jobposition_page(self, url) -> None:
+    def go_to_jobposition_page(self, url: str = "") -> bool:
         """Función que solicita la url al usuario y luego va a la página de los candidatos"""
-
-        print("%%"*50)
-        url = input("Introduzca la url de la página del anuncio\n")
-        print("%%"*50)
 
         validating_url = True
 
