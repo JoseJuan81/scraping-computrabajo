@@ -5,11 +5,12 @@ from dotenv import load_dotenv
 from selenium import webdriver
 
 from Class.Scraping.ScraperBase import ScraperBase
-from Class.Scraping.Computrabajo.Person import Person
+from Class.Scraping.Computrabajo.CompuTrabajoPerson import CompuTrabajoPerson as Person
+from Class.Scraping.Computrabajo.CompuTrabajoSelectors import CompuTrabajoSelectors
 from Class.GHL import GoHighLevel, GHL_APP
 
 from helper.enums import CandidateFields
-from helper.file import save_candidates
+from helper.decoradores import tiempo_ejecucion
 
 load_dotenv()
 
@@ -17,12 +18,9 @@ USER_EMAIL = os.getenv("COMPUTRABAJO_USER_EMAIL")
 USER_PASSWORD = os.getenv("COMPUTRABAJO_USER_PASSWORD")
 COMPUTRABAJO_URL_LOGIN = os.getenv("COMPUTRABAJO_URL_LOGIN")
 
-class Computrabajo(ScraperBase):
-    EMAIL_SELECTOR = "#Email"
-    PASS_SELECTOR = "#Password"
-    BTN_SELECTOR = "#bbR"
-    LIST_OF_CANDIDATES_SELECTOR = "article.rowuser.pos_rel.bClick.no_icons"
-    NEXT_PAGE_SELECTOR = "div.paginas li.siguiente"
+COMPUTRABAJO = "Computrabajo"
+
+class Computrabajo(ScraperBase, CompuTrabajoSelectors):
 
     def __init__(self, external_api: str = "") -> None:
         super().__init__() #llama al constructor de ScraperBase
@@ -32,13 +30,14 @@ class Computrabajo(ScraperBase):
         self.login_url: str = COMPUTRABAJO_URL_LOGIN # hereda la propiedad de ScraperBase
         self.job_position: str = ""
         self.candidates: list[WebElement] = []
+        self.plataform_name = COMPUTRABAJO
         self.person = Person()
-        self.plataform_name = "Computrabajo"
         self.external_api = external_api
 
+    @tiempo_ejecucion(COMPUTRABAJO)
     def start(self) -> None:
         """Funcion para iniciar proceso de scrping en Computrabajo"""
-
+        
         self.init_web_browser()
         self.login()
         self.list_of_candidates()
@@ -84,9 +83,9 @@ class Computrabajo(ScraperBase):
             if exist_page_to_scrap:
                 print(f"página {counter} ")
 
-                candidates = self.get_candidates_webelements()
-                self.extract_initial_data_from_candidates(candidates)
-                loop_validator = self.next_page()
+                candidates = super().get_candidates_webelements(selector = self.LIST_OF_CANDIDATES_SELECTOR)
+                self.extract_initial_data_from_candidates(candidates = candidates)
+                loop_validator = super().next_page(button_selector=self.NEXT_PAGE_SELECTOR)
             else:
                 print("=="*50)
                 print("Usuario no quiso hacer el scraping...le dio miedito :(")
@@ -100,8 +99,11 @@ class Computrabajo(ScraperBase):
             print("=="*50)
             print(f"Se encontraron {len(self.candidates)} candidatos")
 
-            self.candidates = save_candidates(
-                self.candidates, self.job_position)
+            self.candidates = self.save_candidates(
+                candidates=self.candidates,
+                file_name=self.job_position,
+                plataform=self.plataform_name)
+            
             print("información preliminar de los candidatos guardada!!")
             print("__"*50)
 
@@ -141,7 +143,7 @@ class Computrabajo(ScraperBase):
         """Funcion para guardar la data scrapeada a un archivo tipo .csv"""
 
         _job_position = f"{self.plataform_name}_{job_position_name}"
-        return save_candidates(candidates, _job_position)
+        return self.save_candidates(candidates, _job_position)
 
     def send_data_to_external_api(self, candidate_data: dict = {}) -> None:
         """Función que determina si la información del candidato debe envivarse a una Api externa"""
@@ -150,17 +152,10 @@ class Computrabajo(ScraperBase):
             ghl = GoHighLevel(candidate=candidate_data)
             ghl.set_tags([self.plataform_name, self.job_position])
             ghl.send()
-    
-    def get_candidates_webelements(self) -> list[WebElement]:
-        """Función que obtiene y retorna lista de candidatos de Computrabajo"""
 
-        candidates = super().get_elements(selector = self.LIST_OF_CANDIDATES_SELECTOR)
-
-        return candidates if candidates else []
-
-    def extract_initial_data_from_candidates(self, candidates: list) -> None:
+    def extract_initial_data_from_candidates(self, candidates: list = []) -> None:
         """Función para extraer la información de cada candidato desde la
-        lista inicial de la pagina del anuncio"""
+        lista inicial de la pagina del anuncio en Computrabajo"""
 
         local_candidates = []
         for candidate in candidates:
@@ -180,21 +175,10 @@ class Computrabajo(ScraperBase):
 
         self.candidates += local_candidates
 
-    def next_page(self) -> bool:
-        """Función que obtiene el boton de paginación y lo presiona. Retorna True o False"""
-
-        pagination_btn = self.get_next_pagination_button()
-
-        if pagination_btn:
-            pagination_btn.click()
-            return True
-
-        return False
-
-    def get_next_pagination_button(self) -> WebElement | None:
+    def get_next_pagination_button(self, selector: str = "") -> WebElement | None:
         """Función que obtiene próximo botón de la paginación y lo retorna"""
 
-        elements_list = super().get_elements(selector = self.NEXT_PAGE_SELECTOR)
+        elements_list = self.get_elements(selector=selector)
         return elements_list[0] if elements_list else None
     
     # def descargar_archivo(self) -> None:

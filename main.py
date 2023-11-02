@@ -11,12 +11,12 @@ if __name__ == "__main__":
 
     plataforms = scraper.set_plataforms(plataforms=[
         PlataformsNames.Computrabajo.value,
-        PlataformsNames.Linkedin.value,
-        PlataformsNames.Bumeran.value
+        #PlataformsNames.Linkedin.value,
+        #PlataformsNames.Bumeran.value
     ])
 
     if plataforms:
         scraper.init()
-        scraper.use_external_api(send=GHL_APP)
-        # scraper.use_external_api(send=False)
+        #scraper.use_external_api(send=GHL_APP)
+        scraper.use_external_api(send=False)
         scraper.end()

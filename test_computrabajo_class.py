@@ -40,13 +40,22 @@ def test_login(logged_in_session):
 
     assert current_url == expected_url
 
+def test_get_candidates_webelements(logged_in_session):
+    url = "https://empresa.pe.computrabajo.com/Company/Offers/Match?oi=3F53912A8623304361373E686DCF3405&cf=469814F59E4D6F04"
+    compu = logged_in_session
+
+    compu.go_to_jobposition_page(url)
+    candidates = compu.get_candidates_webelements(selector = compu.LIST_OF_CANDIDATES_SELECTOR)
+
+    assert len(candidates) > 0
+    assert len(candidates) > 1
 
 def test_extract_initial_data_from_candidates(logged_in_session):
     url = "https://empresa.pe.computrabajo.com/Company/Offers/Match?oi=3F53912A8623304361373E686DCF3405&cf=469814F59E4D6F04"
     compu = logged_in_session
 
     compu.go_to_jobposition_page(url)
-    candidates = compu.get_candidates_webelements()
+    candidates = compu.get_candidates_webelements(selector = compu.LIST_OF_CANDIDATES_SELECTOR)
     compu.extract_initial_data_from_candidates(candidates)
     first_candidate, *_rest = compu.candidates
 
@@ -84,7 +93,7 @@ def test_next_page(logged_in_session):
     compu = logged_in_session
 
     compu.go_to_jobposition_page(url)
-    page = compu.next_page()
+    page = compu.next_page(button_selector=compu.NEXT_PAGE_SELECTOR)
 
     assert page == True or page == None
 

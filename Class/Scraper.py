@@ -66,12 +66,6 @@ class Scraper:
 
         self.end_all_hilos()
 
-        print("%%"*40)
-        print("%%"*40)
-        print("FIN")
-        print("%%"*40)
-        print("%%"*40)
-
     def computrabajo_hilo(self) -> None:
             self.computrabajo = Computrabajo(external_api = self.external_api)
             self.computrabajo.start()
@@ -93,6 +87,7 @@ class Scraper:
     def end_all_hilos(self) -> None:
         """Funcion que finaliza todos los hilos"""
 
-        for hilo in self.hilos:
-            hilo.join()
+        if len(self.hilos) > 0:
+            for hilo in self.hilos:
+                hilo.join()
     

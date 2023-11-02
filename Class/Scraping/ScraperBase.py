@@ -1,7 +1,12 @@
+import pandas as pd
+import time
+
 from selenium import webdriver
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.common.by import By
 
+from helper.enums import CandidateFields
+from helper.file import save_file_path
 class ScraperBase:
     def __init__(self) -> None:
         self.user_email: str = ""
@@ -65,3 +70,37 @@ class ScraperBase:
                     return False
 
                 print("!!"*50)
+
+    def get_candidates_webelements(self, selector: str = "") -> list[WebElement]:
+        """Función que obtiene y retorna lista de candidatos de la plataforma"""
+
+        candidates = self.get_elements(selector = selector)
+
+        return candidates if candidates else []
+    
+    def next_page(self, button_selector:str = "") -> None:
+        """Función que obtiene el boton de paginación y lo presiona. Retorna True o False"""
+        pagination_btn = self.get_next_pagination_button(selector=button_selector)
+
+        if pagination_btn:
+            pagination_btn.click()
+            return True
+
+        return False
+    
+    def save_candidates(self, candidates: list = [], file_name: str = "", plataform: str = "") -> list[dict]:
+        """Función para guardar lista de candidatos scrapeados"""
+
+        dt = pd.DataFrame.from_dict(candidates, orient="columns")
+
+        _unusefull_data = dt[CandidateFields.NAME.value] != "Sin Nombre"
+        dt = dt.loc[_unusefull_data]
+
+        print("Contactos filtrados:")
+        print(f"{len(dt.index)} contactos a guardar")
+        print("=="*50)
+
+        save_path = save_file_path(f"{plataform}__{file_name}")
+        dt.to_csv(save_path, index=False, header=True)
+
+        return dt.to_dict(orient="records")
