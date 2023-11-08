@@ -85,7 +85,7 @@ class Computrabajo(ScraperBase, CompuTrabajoSelectors):
 
                 candidates = super().get_candidates_webelements(selector = self.LIST_OF_CANDIDATES_SELECTOR)
                 self.extract_initial_data_from_candidates(candidates = candidates)
-                loop_validator = super().next_page(button_selector=self.NEXT_PAGE_SELECTOR)
+                loop_validator = super().next_page()
             else:
                 print("=="*50)
                 print("Usuario no quiso hacer el scraping...le dio miedito :(")
@@ -175,10 +175,10 @@ class Computrabajo(ScraperBase, CompuTrabajoSelectors):
 
         self.candidates += local_candidates
 
-    def get_next_pagination_button(self, selector: str = "") -> WebElement | None:
+    def get_next_pagination_button(self) -> WebElement | None:
         """Función que obtiene próximo botón de la paginación y lo retorna"""
 
-        elements_list = self.get_elements(selector=selector)
+        elements_list = self.get_elements(selector=self.NEXT_PAGE_SELECTOR)
         return elements_list[0] if elements_list else None
     
     # def descargar_archivo(self) -> None:

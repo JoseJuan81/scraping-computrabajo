@@ -78,9 +78,9 @@ class ScraperBase:
 
         return candidates if candidates else []
     
-    def next_page(self, button_selector:str = "") -> None:
+    def next_page(self) -> None:
         """Función que obtiene el boton de paginación y lo presiona. Retorna True o False"""
-        pagination_btn = self.get_next_pagination_button(selector=button_selector)
+        pagination_btn = self.get_next_pagination_button()
 
         if pagination_btn:
             pagination_btn.click()

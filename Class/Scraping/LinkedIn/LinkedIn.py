@@ -32,6 +32,7 @@ class LinkedIn(ScraperBase, LinkedInSelectors):
         self.external_api: str = external_api
         self.person = Person()
         self.plataform_name = LINKEDIN
+        self.candidates: list = []
 
     @tiempo_ejecucion(LINKEDIN)
     def start(self) -> None:
@@ -118,6 +119,8 @@ class LinkedIn(ScraperBase, LinkedInSelectors):
 
         options = webdriver.ChromeOptions()
         self.driver = webdriver.Chrome(options=options)
+        self.driver.implicitly_wait(5)
+
         self.person.set_driver(self.driver)
 
     def login(self) -> None:
@@ -128,20 +131,23 @@ class LinkedIn(ScraperBase, LinkedInSelectors):
             password_selector = self.PASS_SELECTOR,
             btn_selector = self.BTN_SELECTOR
         )
+        print("=="*30)
+        input("Ingresa el codigo de validacion de ser necesario\n")
     
     def get_next_pagination_button(self) -> WebElement | None:
         """Función que obtiene próximo botón de la paginación y lo retorna"""
 
         all_buttons = self.get_elements(selector=self.PAGINATION_BUTTONS_SELECTOR)
         current_button = self.get_element(selector=self.PAGINATION_CURRENT_SELECTOR)
-        current_button_txt = current_button.text
 
-        next_button = None
-        for button in all_buttons:
-            btn_content = button.text
-            next_button = button if btn_content == current_button_txt else None
+        current_index = -1
+        for i, button in enumerate(all_buttons):
+            if button.text == current_button.text:
+                current_index = i
             
-        return next_button
+        next_index = current_index + 1
+        return all_buttons[next_index] if current_index > -1 else None
+            
 
     # def descargar_archivo(self) -> None:
     #
